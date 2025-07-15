@@ -1,57 +1,56 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Flask-SocketIO Test</title>
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-</head>
-<body>
-  <h2>Flask-SocketIO Client Test</h2>
-  <button onclick="sendRegisterValid()">Send Valid Register</button>
-  <button onclick="sendRegisterInvalid()">Send Invalid Register</button>
-  <pre id="output"></pre>
+import os
+import logging
+from flask import Flask, request
+from flask_socketio import SocketIO
 
-  <script>
-    const output = document.getElementById("output");
 
-    const socket = io("https://socketio-m94h.onrender.com", {
-      transports: ["websocket"]
-    });
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-    socket.on("connect", () => {
-      log("✅ Connected to server");
-    });
 
-    socket.on("disconnect", () => {
-      log("❌ Disconnected from server");
-    });
+# Create Flask app
+app = Flask(__name__)
 
-    socket.on("mobile_register_response", (data) => {
-      log("📨 Response: " + JSON.stringify(data));
-    });
 
-    function sendRegisterValid() {
-      const payload = {
-        organisation_id: "xyz",     // triggers "FINE"
-        username: "myuser@example.com"
-      };
-      socket.emit("mobile_register", payload);
-      log("📤 Sent valid registration: " + JSON.stringify(payload));
-    }
+# Enable SocketIO with CORS allowed
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
-    function sendRegisterInvalid() {
-      const payload = {
-        organisation_id: "abc",     // triggers "BE CAREFULL"
-        username: "test@example.com"
-      };
-      socket.emit("mobile_register", payload);
-      log("📤 Sent invalid registration: " + JSON.stringify(payload));
-    }
 
-    function log(msg) {
-      output.textContent += msg + "\n";
-      console.log(msg);
-    }
-  </script>
-</body>
-</html>
+# Event handlers
+@socketio.on("mobile_register")
+def handle_mobile_register(data):
+    logger.info("Received mobile_register event: %s", data)
+   
+    organisation_id = data.get("organisation_id")
+    username = data.get("username")
+
+
+    if not organisation_id or not username:
+        logger.warning("Missing required fields: organisation_id=%s, username=%s", organisation_id, username)
+        socketio.emit("mobile_register_response", {
+            "error": "Please provide required fields"
+        }, room=request.sid)
+        return
+
+
+    if organisation_id == "xyz":
+        logger.info("Valid organisation_id: %s, sending response: FINE", organisation_id)
+        socketio.emit("mobile_register_response", {
+            "message": "FINE"
+        }, room=request.sid)
+    else:
+        logger.info("Invalid organisation_id: %s, sending response: BE CAREFULL", organisation_id)
+        socketio.emit("mobile_register_response", {
+            "message": "BE CAREFULL"
+        }, room=request.sid)
+
+
+# Start the server
+if __name__ == "__main__":
+    logger.info("Starting Flask-SocketIO server...")
+    port = int(os.environ.get("PORT", 10000))  # 'PORT' will be set automatically on Render.com
+    socketio.run(app, host="0.0.0.0", port=port)
