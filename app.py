@@ -1,24 +1,28 @@
 from flask import Flask, request
 from flask_socketio import SocketIO
 import logging
-import os  # ✅ needed for reading PORT env var
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# ✅ Create Flask app
+# Enable debug logging for socketio and engineio
+logging.getLogger("socketio").setLevel(logging.DEBUG)
+logging.getLogger("engineio").setLevel(logging.DEBUG)
+
+# Create Flask app
 app = Flask(__name__)
 
-# ✅ Enable CORS and downgrade to Engine.IO v3 for C++ compatibility
+# Initialize SocketIO with eventlet and Engine.IO v3 for C++ compatibility
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode="eventlet",              # Use eventlet as before
-    engineio_protocol=3                 # ✅ REQUIRED for C++ compatibility
+    async_mode="eventlet",
+    engineio_protocol=3  # REQUIRED for C++ client compatibility
 )
 
-# ✅ Event handlers
+# Event handler for mobile_register
 @socketio.on("mobile_register")
 def handle_mobile_register(data):
     logger.info("Received mobile_register event: %s", data)
@@ -44,9 +48,8 @@ def handle_mobile_register(data):
             "message": "BE CAREFULL"
         }, room=request.sid)
 
-# ✅ Start the server
+# Start the server
 if __name__ == "__main__":
     logger.info("Starting Flask-SocketIO server...")
-    
-    port = int(os.environ.get("PORT", 10000))  # PORT will be auto-set by Render
+    port = int(os.environ.get("PORT", 10000))  # Use Render's PORT or default to 10000
     socketio.run(app, host="0.0.0.0", port=port)
