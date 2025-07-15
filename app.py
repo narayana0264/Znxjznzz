@@ -35,5 +35,6 @@ def handle_mobile_register(data):
         }, room=request.sid)
 
 if __name__ == "__main__":
-    logger.info("Starting Flask-SocketIO server on http://0.0.0.0:8000")
-    socketio.run(app, host='0.0.0.0', port=port)
+    logger.info("Starting Flask-SocketIO server...")
+    port = int(os.environ.get("PORT", 10000))  # 'PORT' will be set automatically on Render.com
+    socketio.run(app, host="0.0.0.0", port=port)
