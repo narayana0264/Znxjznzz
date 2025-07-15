@@ -36,4 +36,4 @@ def handle_mobile_register(data):
 
 if __name__ == "__main__":
     logger.info("Starting Flask-SocketIO server on http://0.0.0.0:8000")
-    socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    socketio.run(app, host='0.0.0.0', port=port)
