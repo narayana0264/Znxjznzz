@@ -1,20 +1,39 @@
-from flask import Flask
-from flask_socketio import SocketIO, emit
+from flask import Flask, request, jsonify
+import csv
+import os
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
-@app.route("/")
-def hello():
-    return "Socket.IO server is running!"
+# Stored sentence
+SENTENCE = "if"
 
-@socketio.on("message")
-def handle_message(data):
-    print("Received message:", data)
-    emit("response", {"status": "received"})
+@app.route('/sentence', methods=['GET'])
+def get_sentence():
+    return jsonify({"sentence": SENTENCE})
 
-# Add any other events your C++ client expects here.
+@app.route('/keystrokes', methods=['POST'])
+def save_keystrokes():
+    data = request.get_json()  # Expect list of dicts
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
 
-if __name__ == "__main__":
-    # For local dev only. For Render/Railway use gunicorn as below.
-    socketio.run(app, host="0.0.0.0", port=5000)
+    output_file = 'keystrokes.csv'
+
+    try:
+        with open(output_file, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['Key', 'DownTime_ms', 'UpTime_ms'])  # Header
+            for item in data:
+                writer.writerow([
+                    item.get('key', ''),
+                    item.get('down_time_ms', ''),
+                    item.get('up_time_ms', '')
+                ])
+    except Exception as e:
+        return jsonify({"error": f"Failed to write file: {str(e)}"}), 500
+
+    return jsonify({"message": "Data saved to CSV"}), 200
+
+if __name__ == '__main__':
+    # Listen on all network interfaces (Wi-Fi, LAN, etc.)
+    app.run(host='0.0.0.0', port=5000, debug=True)
