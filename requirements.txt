@@ -1,2 +1,11 @@
 Flask
 gunicorn
+
+
+ CSampleCredential: Constructor called 
+Advise: Successfully acquired ICredentialProviderCredentialEvents
+Advise: Keyboard hook installed successfully
+ Advise: Set focus to username field 
+SetSelected: Credential selected, resetting keystrokes
+ UnAdvise: Released ICredentialProviderCredentialEvents 
+ UnAdvise: Removed keyboard hook 
